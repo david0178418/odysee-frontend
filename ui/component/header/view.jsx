@@ -67,6 +67,7 @@ const Header = (props: Props) => {
     sidebarOpen,
     syncError,
     totalBalance,
+    user,
     clearEmailEntry,
     clearPasswordEntry,
     openChangelog,
@@ -171,6 +172,7 @@ const Header = (props: Props) => {
       ) : !isMobile ? (
         <div className="header__authButtons">
           <UserOAuthButton />
+          <Button navigate={`/$/${PAGES.AUTH}`} button="primary" label={__('Sign Up')} disabled={user === null} />
         </div>
       ) : (
         <HeaderProfileMenuButton />
