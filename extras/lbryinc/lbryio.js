@@ -72,6 +72,11 @@ Lbryio.call = (resource, action, params = {}, method = 'get') => {
         headers.Authorization = `Bearer ${tokens.access_token}`;
       }
       if (tokens && tokens.auth_token) {
+        if (tokens.access_token) {
+          alert(
+            "auth_token detected. The 'user' will be merged.\nCLOSE the tab now (don't press OK) if you don't want this."
+          );
+        }
         fullParams.auth_token = tokens.auth_token;
       }
     } else if (tokens && tokens.access_token) {
