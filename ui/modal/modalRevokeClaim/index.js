@@ -1,20 +1,15 @@
 import { connect } from 'react-redux';
+import { doAbandonTxo, doAbandonClaim } from 'redux/actions/claims';
 import { doHideModal } from 'redux/actions/app';
-import { doAbandonTxo, doAbandonClaim, doResolveUri } from 'redux/actions/claims';
-import { doToast } from 'redux/actions/notifications';
 import ModalRevokeClaim from './view';
-import { selectTransactionItems } from 'redux/selectors/wallet';
 
-const select = (state) => ({
-  transactionItems: selectTransactionItems(state),
-});
+const perform = (dispatch, ownProps) => {
+  const { claim, tx, cb } = ownProps;
 
-const perform = (dispatch) => ({
-  toast: (message, isError) => dispatch(doToast({ message, isError })),
-  closeModal: () => dispatch(doHideModal()),
-  abandonTxo: (txo, cb) => dispatch(doAbandonTxo(txo, cb)),
-  abandonClaim: (txid, nout, cb) => dispatch(doAbandonClaim(txid, nout, cb)),
-  doResolveUri: (uri) => dispatch(doResolveUri(uri)),
-});
+  return {
+    doRevoke: () => dispatch((claim && doAbandonClaim(claim.txid, claim.nout, cb)) || (tx && doAbandonTxo(tx, cb))),
+    closeModal: () => dispatch(doHideModal()),
+  };
+};
 
-export default connect(select, perform)(ModalRevokeClaim);
+export default connect(null, perform)(ModalRevokeClaim);
