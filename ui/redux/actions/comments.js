@@ -14,6 +14,7 @@ import {
   selectPendingCommentReacts,
   selectModerationBlockList,
   selectModerationDelegatorsById,
+  selectChannelIsBlocked,
 } from 'redux/selectors/comments';
 import { makeSelectNotificationForCommentId } from 'redux/selectors/notifications';
 import { selectActiveChannelClaim } from 'redux/selectors/app';
@@ -892,14 +893,13 @@ function safeParseURI(uri) {
 }
 
 // Hides a users comments from all creator's claims and prevent them from commenting in the future
-function doCommentModToggleBlock(
-  unblock: boolean,
+function doToggleCommentBlockChannel(
   commenterUri: string,
   creatorUri: string,
   blockerIds: Array<string>, // [] = use all my channels
   blockLevel: string,
   timeoutSec: ?number,
-  showLink: boolean = false,
+  hideLink?: boolean,
   offendingCommentId: ?string = undefined
 ) {
   return async (dispatch: Dispatch, getState: GetState) => {
@@ -920,6 +920,7 @@ function doCommentModToggleBlock(
       );
     }
 
+    const isBlocked = selectChannelIsBlocked(state, commenterUri);
     const { channelName, channelClaimId } = parseURI(commenterUri);
     const { channelName: creatorName, channelClaimId: creatorId } = safeParseURI(creatorUri);
 
@@ -955,7 +956,7 @@ function doCommentModToggleBlock(
     }
 
     dispatch({
-      type: unblock ? ACTIONS.COMMENT_MODERATION_UN_BLOCK_STARTED : ACTIONS.COMMENT_MODERATION_BLOCK_STARTED,
+      type: isBlocked ? ACTIONS.COMMENT_MODERATION_UN_BLOCK_STARTED : ACTIONS.COMMENT_MODERATION_BLOCK_STARTED,
       data: {
         blockedUri: commenterUri,
         creatorUri: creatorUri || undefined,
@@ -968,7 +969,7 @@ function doCommentModToggleBlock(
 
     let channelSignatures = [];
 
-    const sharedModBlockParams = unblock
+    const sharedModBlockParams = isBlocked
       ? {
           un_blocked_channel_id: commenterIdForAction,
           un_blocked_channel_name: commenterNameForAction,
@@ -978,7 +979,7 @@ function doCommentModToggleBlock(
           blocked_channel_name: commenterNameForAction,
         };
 
-    const commentAction = unblock ? Comments.moderation_unblock : Comments.moderation_block;
+    const commentAction = isBlocked ? Comments.moderation_unblock : Comments.moderation_block;
 
     return Promise.all(blockerChannelClaims.map((x) => channelSignName(x.claim_id, x.name)))
       .then((response) => {
@@ -999,11 +1000,11 @@ function doCommentModToggleBlock(
                 signing_ts: signatureData.signing_ts,
                 creator_channel_id: creatorUri ? creatorId : undefined,
                 creator_channel_name: creatorUri ? creatorName : undefined,
-                offending_comment_id: offendingCommentId && !unblock ? offendingCommentId : undefined,
-                block_all: unblock ? undefined : blockLevel === BLOCK_LEVEL.ADMIN,
-                global_un_block: unblock ? blockLevel === BLOCK_LEVEL.ADMIN : undefined,
+                offending_comment_id: offendingCommentId && !isBlocked ? offendingCommentId : undefined,
+                block_all: isBlocked ? undefined : blockLevel === BLOCK_LEVEL.ADMIN,
+                global_un_block: isBlocked ? blockLevel === BLOCK_LEVEL.ADMIN : undefined,
                 ...sharedModBlockParams,
-                time_out: unblock ? undefined : timeoutSec,
+                time_out: isBlocked ? undefined : timeoutSec,
               })
             )
         )
@@ -1023,7 +1024,7 @@ function doCommentModToggleBlock(
             if (failures.length !== 0) {
               dispatch(doToast({ message: failures.join(), isError: true }));
               dispatch({
-                type: unblock ? ACTIONS.COMMENT_MODERATION_UN_BLOCK_FAILED : ACTIONS.COMMENT_MODERATION_BLOCK_FAILED,
+                type: isBlocked ? ACTIONS.COMMENT_MODERATION_UN_BLOCK_FAILED : ACTIONS.COMMENT_MODERATION_BLOCK_FAILED,
                 data: {
                   blockedUri: commenterUri,
                   creatorUri: creatorUri || undefined,
@@ -1034,7 +1035,9 @@ function doCommentModToggleBlock(
             }
 
             dispatch({
-              type: unblock ? ACTIONS.COMMENT_MODERATION_UN_BLOCK_COMPLETE : ACTIONS.COMMENT_MODERATION_BLOCK_COMPLETE,
+              type: isBlocked
+                ? ACTIONS.COMMENT_MODERATION_UN_BLOCK_COMPLETE
+                : ACTIONS.COMMENT_MODERATION_BLOCK_COMPLETE,
               data: {
                 blockedUri: commenterUri,
                 creatorUri: creatorUri || undefined,
@@ -1044,17 +1047,17 @@ function doCommentModToggleBlock(
 
             dispatch(
               doToast({
-                message: unblock
+                message: isBlocked
                   ? __('Channel unblocked!')
                   : __('Channel "%channel%" blocked.', { channel: commenterNameForAction }),
-                linkText: __(showLink ? 'See All' : ''),
+                linkText: __(hideLink ? '' : 'See All'),
                 linkTarget: '/settings/block_and_mute',
               })
             );
           })
           .catch(() => {
             dispatch({
-              type: unblock ? ACTIONS.COMMENT_MODERATION_UN_BLOCK_FAILED : ACTIONS.COMMENT_MODERATION_BLOCK_FAILED,
+              type: isBlocked ? ACTIONS.COMMENT_MODERATION_UN_BLOCK_FAILED : ACTIONS.COMMENT_MODERATION_BLOCK_FAILED,
               data: {
                 blockedUri: commenterUri,
                 creatorUri: creatorUri || undefined,
@@ -1065,7 +1068,7 @@ function doCommentModToggleBlock(
       })
       .catch(() => {
         dispatch({
-          type: unblock ? ACTIONS.COMMENT_MODERATION_UN_BLOCK_FAILED : ACTIONS.COMMENT_MODERATION_BLOCK_FAILED,
+          type: isBlocked ? ACTIONS.COMMENT_MODERATION_UN_BLOCK_FAILED : ACTIONS.COMMENT_MODERATION_BLOCK_FAILED,
           data: {
             blockedUri: commenterUri,
             creatorUri: creatorUri || undefined,
@@ -1089,15 +1092,15 @@ function doCommentModToggleBlock(
  * @param showLink
  * @returns {function(Dispatch): *}
  */
-export function doCommentModBlock(
+export function doToggleBlockChannel(
   commenterUri: string,
   offendingCommentId: ?string,
   timeoutSec: ?number,
-  showLink: boolean = true
+  hideLink: boolean
 ) {
   return (dispatch: Dispatch) => {
     return dispatch(
-      doCommentModToggleBlock(false, commenterUri, '', [], BLOCK_LEVEL.SELF, timeoutSec, showLink, offendingCommentId)
+      doToggleCommentBlockChannel(commenterUri, '', [], BLOCK_LEVEL.SELF, timeoutSec, hideLink, offendingCommentId)
     );
   };
 }
@@ -1111,7 +1114,7 @@ export function doCommentModBlock(
  * @param timeoutSec
  * @returns {function(Dispatch): *}
  */
-export function doCommentModBlockAsAdmin(
+export function doToggleBlockChannelAsAdmin(
   commenterUri: string,
   offendingCommentId: ?string,
   blockerId: ?string,
@@ -1119,14 +1122,13 @@ export function doCommentModBlockAsAdmin(
 ) {
   return (dispatch: Dispatch) => {
     return dispatch(
-      doCommentModToggleBlock(
-        false,
+      doToggleCommentBlockChannel(
         commenterUri,
         '',
         blockerId ? [blockerId] : [],
         BLOCK_LEVEL.ADMIN,
         timeoutSec,
-        false,
+        true,
         offendingCommentId
       )
     );
@@ -1144,7 +1146,7 @@ export function doCommentModBlockAsAdmin(
  * @param timeoutSec
  * @returns {function(Dispatch): *}
  */
-export function doCommentModBlockAsModerator(
+export function doToggleBlockChannelAsModerator(
   commenterUri: string,
   offendingCommentId: ?string,
   creatorUri: string,
@@ -1153,59 +1155,15 @@ export function doCommentModBlockAsModerator(
 ) {
   return (dispatch: Dispatch) => {
     return dispatch(
-      doCommentModToggleBlock(
-        false,
+      doToggleCommentBlockChannel(
         commenterUri,
         creatorUri,
         blockerId ? [blockerId] : [],
         BLOCK_LEVEL.MODERATOR,
         timeoutSec,
-        false,
+        true,
         offendingCommentId
       )
-    );
-  };
-}
-
-/**
- * Unblocks the commenter for all channels that I own.
- *
- * @param commenterUri
- * @param showLink
- * @returns {function(Dispatch): *}
- */
-export function doCommentModUnBlock(commenterUri: string, showLink: boolean = true) {
-  return (dispatch: Dispatch) => {
-    return dispatch(doCommentModToggleBlock(true, commenterUri, '', [], BLOCK_LEVEL.SELF, undefined, showLink));
-  };
-}
-
-/**
- * Unblocks the commenter using the given channel that has Global privileges.
- *
- * @param commenterUri
- * @param blockerId
- * @returns {function(Dispatch): *}
- */
-export function doCommentModUnBlockAsAdmin(commenterUri: string, blockerId: string) {
-  return (dispatch: Dispatch) => {
-    return dispatch(doCommentModToggleBlock(true, commenterUri, '', blockerId ? [blockerId] : [], BLOCK_LEVEL.ADMIN));
-  };
-}
-
-/**
- * Unblocks the commenter using the given channel that has been granted
- * moderation rights by the creator.
- *
- * @param commenterUri
- * @param creatorUri
- * @param blockerId
- * @returns {function(Dispatch): *}
- */
-export function doCommentModUnBlockAsModerator(commenterUri: string, creatorUri: string, blockerId: string) {
-  return (dispatch: Dispatch) => {
-    return dispatch(
-      doCommentModToggleBlock(true, commenterUri, creatorUri, blockerId ? [blockerId] : [], BLOCK_LEVEL.MODERATOR)
     );
   };
 }

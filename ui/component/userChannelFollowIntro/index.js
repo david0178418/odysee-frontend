@@ -1,5 +1,5 @@
 import { connect } from 'react-redux';
-import { doChannelSubscribe } from 'redux/actions/subscriptions';
+import { doToggleSubscription } from 'redux/actions/subscriptions';
 import { selectHomepageData, selectLanguage } from 'redux/selectors/settings';
 import { selectPrefsReady } from 'redux/selectors/sync';
 import { selectSubscriptions } from 'redux/selectors/subscriptions';
@@ -13,7 +13,7 @@ const select = (state) => ({
 });
 
 const perform = (dispatch) => ({
-  channelSubscribe: (channelName, uri) => dispatch(doChannelSubscribe({ channelName, uri })),
+  channelSubscribe: (channelName, uri) => dispatch(doToggleSubscription({ channelName, uri })),
 });
 
 export default connect(select, perform)(UserChannelFollowIntro);

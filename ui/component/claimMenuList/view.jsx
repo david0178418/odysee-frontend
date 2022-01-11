@@ -43,9 +43,9 @@ type Props = {
   channelIsBlocked: boolean,
   channelIsAdminBlocked: boolean,
   isAdmin: boolean,
-  handleMute: (boolean, string) => void,
-  handleModBlock: (boolean, string) => void,
-  handleAdminBlock: (boolean, string) => void,
+  toggleMute: (string) => void,
+  toggleModBlock: (string) => void,
+  toggleAdminBlock: (string) => void,
   doCollectionEdit: (string, any) => void,
   hasClaimInWatchLater: boolean,
   hasClaimInFavorites: boolean,
@@ -57,7 +57,7 @@ type Props = {
   fileInfo: FileListItem,
   prepareEdit: ({}, string, {}) => void,
   isSubscribed: boolean,
-  handleSubscribe: (boolean, SubscriptionArgs) => void,
+  toggleSubscribe: (SubscriptionArgs) => void,
   isChannelPage: boolean,
   editedCollection: Collection,
   isAuthenticated: boolean,
@@ -77,13 +77,13 @@ function ClaimMenuList(props: Props) {
     contentChannelUri,
     openModal,
     inline = false,
-    handleMute,
+    toggleMute,
     channelIsMuted,
     channelIsBlocked,
     channelIsAdminBlocked,
     isAdmin,
-    handleModBlock,
-    handleAdminBlock,
+    toggleModBlock,
+    toggleAdminBlock,
     doCollectionEdit,
     hasClaimInWatchLater,
     hasClaimInFavorites,
@@ -94,7 +94,7 @@ function ClaimMenuList(props: Props) {
     fileInfo,
     prepareEdit,
     isSubscribed,
-    handleSubscribe,
+    toggleSubscribe,
     isChannelPage = false,
     editedCollection,
     isAuthenticated,
@@ -172,7 +172,7 @@ function ClaimMenuList(props: Props) {
 
   function handleFollow() {
     if (channelName) {
-      handleSubscribe(isSubscribed, {
+      toggleSubscribe({
         channelName: '@' + channelName,
         uri: contentChannelUri,
         notificationsDisabled: true,
@@ -321,21 +321,21 @@ function ClaimMenuList(props: Props) {
                       {!isChannelPage && <hr className="menu__separator" />}
 
                       <MenuItem
-                        onSelect={() => handleModBlock(channelIsBlocked, contentChannelUri)}
+                        onSelect={() => toggleModBlock(contentChannelUri)}
                         icon={ICONS.BLOCK}
                         label={channelIsBlocked ? __('Unblock Channel') : __('Block Channel')}
                       />
 
                       {isAdmin && (
                         <MenuItem
-                          onSelect={() => handleAdminBlock(channelIsAdminBlocked, contentChannelUri)}
+                          onSelect={() => toggleAdminBlock(contentChannelUri)}
                           icon={ICONS.GLOBE}
                           label={channelIsAdminBlocked ? __('Global Unblock Channel') : __('Global Block Channel')}
                         />
                       )}
 
                       <MenuItem
-                        onSelect={() => handleMute(channelIsMuted, contentChannelUri)}
+                        onSelect={() => toggleMute(contentChannelUri)}
                         icon={ICONS.MUTE}
                         label={channelIsMuted ? __('Unmute Channel') : __('Mute Channel')}
                       />

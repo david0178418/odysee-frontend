@@ -1,5 +1,5 @@
 import { connect } from 'react-redux';
-import { doChannelSubscribe, doChannelUnsubscribe } from 'redux/actions/subscriptions';
+import { doToggleSubscription } from 'redux/actions/subscriptions';
 import {
   selectIsSubscribedForUri,
   selectFirstRunCompleted,
@@ -19,7 +19,6 @@ const select = (state, props) => ({
 });
 
 export default connect(select, {
-  doChannelSubscribe,
-  doChannelUnsubscribe,
+  doToggleSubscription,
   doToast,
 })(SubscribeButton);
