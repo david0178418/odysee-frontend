@@ -122,3 +122,13 @@ export const getIsClaimPlayable = (claim: ?Claim) =>
   // $FlowFixMe
   claim.value.stream_type &&
   (claim.value.stream_type === 'audio' || claim.value.stream_type === 'video');
+
+export const getClaimMetadata = (claim: ?Claim) => {
+  const metadata = claim && claim.value;
+  return metadata || (claim === undefined ? undefined : null);
+};
+
+export const getClaimTitle = (claim: ?Claim) => {
+  const metadata = getClaimMetadata(claim);
+  return metadata && metadata.title;
+};
