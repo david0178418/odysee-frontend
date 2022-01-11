@@ -1,6 +1,6 @@
 // @flow
 import { buildURI, parseURI } from 'util/lbryURI';
-import { generateShareUrl, generateRssUrl, formatLbryUrlForWeb, generateListSearchUrlParams } from 'util/url';
+import { generateShareUrl, generateRssUrl } from 'util/url';
 import { getChannelPermanentUrlFromClaim, getIsClaimPlayable } from 'util/claim';
 import { Menu, MenuButton, MenuList } from '@reach/menu-button';
 import { URL, SHARE_DOMAIN_URL } from 'config';
@@ -10,6 +10,7 @@ import * as ICONS from 'constants/icons';
 import * as MODALS from 'constants/modal_types';
 import * as PAGES from 'constants/pages';
 import classnames from 'classnames';
+import CollectionMenuItems from 'component/collectionMenuItems';
 import Icon from 'component/common/icon';
 import MenuItem from 'component/common/menu-item';
 import MenuLink from 'component/common/menu-link';
@@ -33,14 +34,9 @@ type Props = {
   claimIsMine?: boolean,
   isSubscribed?: boolean,
   isChannelPage?: boolean,
-  editedCollection?: Collection,
   isAuthenticated: boolean,
-  playNextUri?: string,
-  resolvedList?: boolean,
   doCollectionEdit: (string, any) => void,
   doToast: ({ message: string, isError?: boolean }) => void,
-  doToggleShuffleList: (string) => void,
-  fetchCollectionItems: (string) => void,
   openModal: (id: string, {}) => void,
   prepareEdit: ({}, string) => void,
   toggleAdminBlock: (string) => void,
@@ -64,14 +60,9 @@ export default function ClaimMenuList(props: Props) {
     claimIsMine,
     isSubscribed,
     isChannelPage = false,
-    editedCollection,
     isAuthenticated,
-    playNextUri,
-    resolvedList,
     doCollectionEdit,
     doToast,
-    doToggleShuffleList,
-    fetchCollectionItems,
     openModal,
     prepareEdit,
     toggleAdminBlock,
@@ -81,8 +72,6 @@ export default function ClaimMenuList(props: Props) {
   } = props;
 
   const { push } = useHistory();
-
-  const [doShuffle, setDoShuffle] = React.useState(false);
 
   const contentClaim = (claim && claim.reposted_claim) || claim;
   // $FlowFixMe
@@ -103,11 +92,6 @@ export default function ClaimMenuList(props: Props) {
 
   const shareUrl = generateShareUrl(SHARE_DOMAIN, uri);
   const rssUrl = isChannel && generateRssUrl(SHARE_DOMAIN, claim);
-
-  function handleShuffle() {
-    if (!resolvedList && collectionClaimId) fetchCollectionItems(collectionClaimId);
-    setDoShuffle(true);
-  }
 
   function handleAdd(isInSource, name, collectionId) {
     if (contentClaim) {
@@ -169,20 +153,6 @@ export default function ClaimMenuList(props: Props) {
       });
   }
 
-  React.useEffect(() => {
-    if (collectionClaimId && doShuffle && resolvedList) {
-      doToggleShuffleList(collectionClaimId);
-
-      if (playNextUri) {
-        push({
-          pathname: formatLbryUrlForWeb(playNextUri),
-          search: generateListSearchUrlParams(collectionClaimId),
-          state: { collectionClaimId, forceAutoplay: true },
-        });
-      }
-    }
-  }, [collectionClaimId, doShuffle, doToggleShuffleList, playNextUri, push, resolvedList]);
-
   return (
     <Menu>
       <MenuButton
@@ -198,27 +168,7 @@ export default function ClaimMenuList(props: Props) {
       <MenuList className="menu__list">
         {/* COLLECTION OPERATIONS */}
         {collectionClaimId ? (
-          <>
-            <MenuLink page={`${PAGES.LIST}/${collectionClaimId}`} icon={ICONS.VIEW} label={__('View List')} />
-
-            <MenuItem onSelect={handleShuffle} icon={ICONS.SHUFFLE} label={__('Shuffle Play')} />
-
-            {isMyCollection && (
-              <>
-                <MenuLink
-                  page={`${PAGES.LIST}/${collectionClaimId}?view=edit`}
-                  icon={ICONS.PUBLISH}
-                  label={editedCollection ? __('Publish') : __('Edit List')}
-                />
-
-                <MenuItem
-                  onSelect={() => openModal(MODALS.COLLECTION_DELETE, { collectionClaimId })}
-                  icon={ICONS.DELETE}
-                  label={__('Delete List')}
-                />
-              </>
-            )}
-          </>
+          <CollectionMenuItems collectionId={collectionClaimId} />
         ) : (
           isAuthenticated &&
           isPlayable && (
