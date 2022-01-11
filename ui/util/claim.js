@@ -108,3 +108,17 @@ export function getChannelFromClaim(claim: ?Claim) {
     ? claim.signing_channel
     : null;
 }
+
+export function getChannelPermanentUrlFromClaim(claim: ?Claim) {
+  if (!claim) return null;
+
+  const channel = getChannelFromClaim(claim);
+  return channel && channel.permanent_url;
+}
+
+export const getIsClaimPlayable = (claim: ?Claim) =>
+  claim &&
+  claim.value &&
+  // $FlowFixMe
+  claim.value.stream_type &&
+  (claim.value.stream_type === 'audio' || claim.value.stream_type === 'video');
