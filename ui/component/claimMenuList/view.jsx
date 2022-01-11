@@ -261,11 +261,13 @@ export default function ClaimMenuList(props: Props) {
               </>
             )}
 
-            {claimIsMine && !isChannelPage && !isRepost && (
+            {claimIsMine && !isChannelPage && !isRepost && !isCollectionClaim && (
               <MenuItem onSelect={handleEdit} icon={ICONS.EDIT} label={__('Edit')} />
             )}
 
-            {claimIsMine && <MenuItem onSelect={handleDelete} icon={ICONS.DELETE} label={__('Delete')} />}
+            {claimIsMine && !isCollectionClaim && (
+              <MenuItem onSelect={handleDelete} icon={ICONS.DELETE} label={__('Delete')} />
+            )}
 
             <hr className="menu__separator" />
           </>
