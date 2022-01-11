@@ -10,20 +10,27 @@ import { doHideModal } from 'redux/actions/app';
 import ModalRemoveCollection from './view';
 
 const select = (state, props) => {
-  const claim = makeSelectClaimForClaimId(props.collectionId)(state);
-  const uri = (claim && (claim.canonical_url || claim.permanent_url)) || null;
+  const { collectionId } = props;
+
+  const claim = makeSelectClaimForClaimId(collectionId)(state);
+  const uri = claim ? claim.canonical_url || claim.permanent_url : null;
+
   return {
     claim,
-    uri,
     claimIsMine: selectClaimIsMineForUri(state, uri),
+    collectionName: makeSelectNameForCollectionId(collectionId)(state),
     isAbandoning: makeSelectIsAbandoningClaimForUri(uri)(state),
-    collectionName: makeSelectNameForCollectionId(props.collectionId)(state),
+    uri,
   };
 };
 
-const perform = (dispatch) => ({
-  closeModal: () => dispatch(doHideModal()),
-  collectionDelete: (id) => dispatch(doCollectionDelete(id)),
-});
+const perform = (dispatch, ownProps) => {
+  const { collectionId } = ownProps;
+
+  return {
+    closeModal: () => dispatch(doHideModal()),
+    collectionDelete: () => dispatch(doCollectionDelete(collectionId)),
+  };
+};
 
 export default connect(select, perform)(ModalRemoveCollection);
