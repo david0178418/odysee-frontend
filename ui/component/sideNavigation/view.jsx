@@ -65,7 +65,7 @@ const PLAYLISTS = {
 const UNAUTH_LINKS: Array<SideNavLink> = [
   {
     title: 'Log In',
-    link: `/$/${PAGES.OAUTH_LOGIN}`,
+    link: `/$/${PAGES.AUTH_SIGNIN}`,
     icon: ICONS.SIGN_IN,
   },
   {
